@@ -51,6 +51,9 @@ int main(void)
     char s[INET6_ADDRSTRLEN];
     int rv;
 
+    //Seed random number generator
+    srand(time(NULL)); 
+
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -121,8 +124,30 @@ int main(void)
 
         if (!fork()) { // this is the child process
             close(sockfd); // child doesn't need the listener
-            if (send(new_fd, "Hello, world!", 13, 0) == -1)
-                perror("send");
+            int target = rand() % 100 + 1;
+            char buffer[10];
+            int guess;
+
+            send(new_fd, "Guess a number between 1 and 100:\n", 35,0);
+            while (1) {
+                int bytes_received = recv(new_fd, buffer, sizeof(buffer) - 1, 0);
+                if (bytes_received <= 0) break;
+
+                buffer[bytes_received] = '\0';
+                guess = atoi(buffer);
+
+                if (guess < target) {
+                    send(new_fd, "Too low! Try again:\n", 21, 0);
+                }
+                else if (guess > target) {
+                    send(new_fd, "Too high! Try again:\n", 22, 0);
+                }
+                else{
+                    send(new_fd, "Right on the money! You win!\n", 19, 0);
+                    break;
+                }
+            }
+            
             close(new_fd);
             exit(0);
         }
