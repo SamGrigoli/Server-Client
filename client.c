@@ -1,7 +1,3 @@
-/*
-** client.c -- A simple TCP client for a number guessing game
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,27 +9,26 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#define PORT "3490"
-#define MAXDATASIZE 100
+#define PORT "3490"  // Port number to connect to
+#define MAXDATASIZE 100 // Max number of bytes to receive at once
 
-void *get_in_addr(struct sockaddr *sa)
-{
+// Get sockaddr, IPv4 or IPv6:
+void *get_in_addr(struct sockaddr *sa) {
     if (sa->sa_family == AF_INET) {
         return &(((struct sockaddr_in*)sa)->sin_addr);
     }
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     int sockfd, numbytes;
-    char buf[MAXDATASIZE];
+    char buffer[MAXDATASIZE];
     struct addrinfo hints, *servinfo, *p;
     int rv;
     char s[INET6_ADDRSTRLEN];
 
     if (argc != 2) {
-        fprintf(stderr,"usage: client hostname\n");
+        fprintf(stderr,"Usage: client hostname\n");
         exit(1);
     }
 
@@ -46,6 +41,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // Loop through all results and connect to the first available
     for (p = servinfo; p != NULL; p = p->ai_next) {
         if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
             perror("client: socket");
@@ -66,19 +62,43 @@ int main(int argc, char *argv[])
         return 2;
     }
 
-    freeaddrinfo(servinfo);
+    inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
+    printf("client: connected to %s\n", s);
 
-    while ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) > 0) {
-        buf[numbytes] = '\0';
-        printf("%s", buf);
+    freeaddrinfo(servinfo); // All done with this structure
 
-        if (strstr(buf, "Correct!")) break;
+    // **Game loop**: Keep guessing until the server confirms the correct guess
+    while (1) {
+        printf("Enter your guess: ");
+        fgets(buffer, sizeof(buffer), stdin); // Get input from user
 
-        printf("Enter guess: ");
-        fgets(buf, sizeof(buf), stdin);
-        send(sockfd, buf, strlen(buf), 0);
+        // Send the guess to server
+        if (send(sockfd, buffer, strlen(buffer), 0) == -1) {
+            perror("send");
+            break;
+        }
+
+        // Receive response from server
+        numbytes = recv(sockfd, buffer, sizeof(buffer) - 1, 0);
+        if (numbytes <= 0) {
+            if (numbytes == 0) {
+                printf("Server closed connection.\n");
+            } else {
+                perror("recv");
+            }
+            break;
+        }
+
+        buffer[numbytes] = '\0'; // Null-terminate the received string
+        printf("Server: %s", buffer); // Display server response
+
+        // If the server says "Correct! You win!", break the loop
+        if (strstr(buffer, "Correct!") != NULL) {
+            printf("You won! Closing connection...\n");
+            break;
+        }
     }
 
-    close(sockfd);
+    close(sockfd); // Close the socket when game is over
     return 0;
 }
