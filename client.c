@@ -71,21 +71,20 @@ int main(int argc, char *argv[])
         fprintf(stderr, "client: failed to connect\n");
         return 2;
     }
+     freeaddrinfo(servinfo);
 
-    inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
-            s, sizeof s);
-    printf("client: connecting to %s\n", s);
+    while ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) > 0) {
+        buf[numbytes] = '\0';
+        printf("%s", buf);
 
-    freeaddrinfo(servinfo); // all done with this structure
+        if (strstr(buf, "Correct!")) break;
 
-    if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-        perror("recv");
-        exit(1);
+        printf("Enter guess: ");
+        fgets(buf, sizeof(buf), stdin);
+        send(sockfd, buf, strlen(buf), 0);
     }
-
-    buf[numbytes] = '\0';
-
-    printf("client: received '%s'\n",buf);
+    
+    }
 
     close(sockfd);
 
