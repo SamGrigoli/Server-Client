@@ -116,15 +116,19 @@ int main(void)
             int target = rand() % 100 + 1;
             char buffer[10];
             int guess;
+            int bytes_received; // Declare bytes_received
 
             send(new_fd, "Guess a number between 1 and 100:\n", 35, 0);
 
             while (1) {
-                int bytes_received = recv(new_fd, buffer, sizeof(buffer) - 1, 0);
-                if (bytes_received <= 0) break;
+                bytes_received = recv(new_fd, buffer, sizeof(buffer) - 1, 0);
+                if (bytes_received <= 0) {
+                    printf("Client disconnected or error occurred.\n");
+                    break;
+                }
 
-                buffer[bytes_received] = '\0';
-                guess = atoi(buffer);
+                buffer[bytes_received] = '\0'; // Null-terminate the string
+                guess = atoi(buffer); // Convert input to integer
 
                 if (guess < target) {
                     send(new_fd, "Too low. Try again:\n", 21, 0);
@@ -140,31 +144,6 @@ int main(void)
             exit(0);
         }
         close(new_fd);
-    }
-
-    return 0;
-}
-
-
-                buffer[bytes_received] = '\0';
-                guess = atoi(buffer);
-
-                if (guess < target) {
-                    send(new_fd, "Too low! Try again:\n", 21, 0);
-                }
-                else if (guess > target) {
-                    send(new_fd, "Too high! Try again:\n", 22, 0);
-                }
-                else{
-                    send(new_fd, "Right on the money! You win!\n", 19, 0);
-                    break;
-                }
-            }
-            
-            close(new_fd);
-            exit(0);
-        }
-        close(new_fd);  // parent doesn't need this
     }
 
     return 0;
