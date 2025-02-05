@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 
     freeaddrinfo(servinfo); // All done with this structure
 
-    // **Game loop**: Keep guessing until the server confirms the correct guess
+    // Game loop: Keep guessing until the server confirms the correct guess
     while (1) {
         printf("Enter your guess: ");
         fgets(buffer, sizeof(buffer), stdin); // Get input from user
@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
         buffer[numbytes] = '\0'; // Null-terminate the received string
         printf("Server: %s", buffer); // Display server response
 
-        // If the server says "Correct! You win!", break the loop
+        // If correct break the loop
         if (strstr(buffer, "Correct!") != NULL) {
             printf("You won! Closing connection...\n");
             break;
